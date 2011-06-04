@@ -1,0 +1,81 @@
+#!/usr/bin/perl -w
+#
+# psj - list java processes
+#
+# This script looks at all running java processes and tries to determine what
+# applications each process is a part of. 
+#
+# The output looks like this:
+#
+#   PID  Application                     Runtime  Tomcat  JAVA_HOME  User         Threads  RSS Mem  Java Version  Ports
+# 10602  email-manager-webapp            20 hrs   yes     /opt/jre   root         27       174      1.6.0_24      9876,11010,11010,11200,40390
+#        order-manager-webapp
+# 10562  accounts-service                2 days   yes     /opt/jre   app_runtime   9       400      1.6.0_24      8765,11040,11041
+# 10627  mock-cron                       3 mins   no      /opt/jre   root         79       156      1.6.0_24      (none)
+#
+# A note about the "Tomcat" entry; this is "yes" when the application uses
+# tomcat from the system RPM. There are cases where this will be set to "no"
+# and the application does use tomcat, it just has its own bundled version,
+# and has no runtime reference to anything over in /opt/tomcat*
+#
+
+use strict;
+use warnings;
+
+use POSIX qw(floor);
+
+use PSJ::Common;
+use Java::Running;
+use Java::RPM;
+
+use Devel::SubTime;
+
+# this gets set if ran with perl -d
+if (in_array("perl5db.pl", keys %INC)) {
+	$Carp::Verbose = 1;
+	$Java::Running::Verbose = 1;
+	$Devel::SubTime::DIFF_TIME = 0.01;
+
+	print "Debugging is ON!\n";
+}
+
+my @valid_cmds = ('list', 'restart', 'start', 'stop', 'waitstop', 'waitstart', 'kill');
+
+sub usage {
+	print "$0 [command] [target]\n";
+	exit;
+}
+
+# get user argument
+my ($cmd, $target) = @ARGV;
+
+# assume command is "list" if no command given
+$cmd = "list" unless $cmd;
+
+if (!in_array($cmd, @valid_cmds)) {
+	print "$cmd is not a valid command, exiting.\n";
+	exit;
+}
+
+# require a target (PID or application name) if the command isn't list
+if ("list" ne $cmd and !$target) {
+	&usage;
+}
+
+# "unknown" can be ambiguous
+if ($target and "unknown" eq $target) {
+	print "To stop an unknown java process, please provide the PID instead.\n";
+	exit;
+}
+
+# if not root, exec via sudo
+if ($< != 0) {
+	exec '/usr/bin/sudo', $0, @ARGV;
+}
+
+my $running = new Java::Running;
+
+my $ret = $running->$cmd($target);
+
+exit $ret;
+
