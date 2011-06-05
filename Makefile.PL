@@ -6,6 +6,7 @@ WriteMakefile(
     NAME              => 'psj',
     VERSION_FROM      => 'bin/psj',
     PREREQ_PM         => {},
+    EXE_FILES => [ "bin/psj" ],
     ($] >= 5.005 ?
       (ABSTRACT_FROM  => 'bin/psj', # retrieve abstract from module
        AUTHOR         => 'Corey Henderson <corman@cormander.com>') : ()),
