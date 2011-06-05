@@ -1,5 +1,4 @@
 bin/psj
-t/Psj.t
 lib/Java/Running.pm
 lib/Java/RPM.pm
 lib/Java/App.pm
