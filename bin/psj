@@ -30,17 +30,6 @@ use PSJ::Common;
 use Java::Running;
 use Java::RPM;
 
-use Devel::SubTime;
-
-# this gets set if ran with perl -d
-if (in_array("perl5db.pl", keys %INC)) {
-	$Carp::Verbose = 1;
-	$Java::Running::Verbose = 1;
-	$Devel::SubTime::DIFF_TIME = 0.01;
-
-	print "Debugging is ON!\n";
-}
-
 my @valid_cmds = ('list', 'restart', 'start', 'stop', 'waitstop', 'waitstart', 'kill');
 
 sub usage {
