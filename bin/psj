@@ -22,6 +22,8 @@
 use strict;
 use warnings;
 
+our $VERSION = '0.01';
+
 use POSIX qw(floor);
 
 use PSJ::Common;
