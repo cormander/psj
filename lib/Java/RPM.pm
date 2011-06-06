@@ -108,13 +108,9 @@ sub find_script {
 		die "$find is not a valid script to look for";
 	}
 
-	my $dir = $self->basedir;
-
-	my @wars = glob $dir . "/*.war";
-
-	my @starts = glob $dir . "/*start*";
-	my @stops = glob $dir . "/*stop*";
-	my @shuts = glob $dir . "/*shutdown*";
+	if (-x "/etc/init.d/" . $self->{pkg}) {
+		$script = "/etc/init.d/" . $self->{pkg} . " " . $cmd;
+	}
 
 	# set JAVA_HOME if we need to
 	if (!$ENV{JAVA_HOME}) {
@@ -126,29 +122,41 @@ sub find_script {
 		}
 	}
 
-	if (-f $dir . "/conf/server.xml") {
-		if (-x $dir . "/$find.sh") {
-			$script = $dir . "/$find.sh";
+	# wasn't an init script, so look around for it
+	if (!$script) {
+
+		my $dir = $self->basedir;
+
+		my @wars = glob $dir . "/*.war";
+
+		my @starts = glob $dir . "/*start*";
+		my @stops = glob $dir . "/*stop*";
+		my @shuts = glob $dir . "/*shutdown*";
+
+		if (-f $dir . "/conf/server.xml") {
+			if (-x $dir . "/$find.sh") {
+				$script = $dir . "/$find.sh";
+			}
+			elsif (-x $dir . "/tomcat") {
+				$script = $dir . "/tomcat $cmd";
+			}
 		}
-		elsif (-x $dir . "/tomcat") {
-			$script = $dir . "/tomcat $cmd";
+		elsif (0 < scalar @wars) {
+			$self->set_sharedtomcat;
+			return $self->find_script($find);
 		}
-	}
-	elsif (0 < scalar @wars) {
-		$self->set_sharedtomcat;
-		return $self->find_script($find);
-	}
-	elsif ("start" eq $cmd and 1 == scalar @starts) {
-		$script = $starts[0];
-	}
-	elsif ("stop" eq $cmd and 1 == scalar @stops) {
-		$script = $stops[0];
-	}
-	elsif ("stop" eq $cmd and 1 == scalar @shuts) {
-		$script = $shuts[0];
-	}
-	else {
-		die "Could not find $find script for $self->{pkg}";
+		elsif ("start" eq $cmd and 1 == scalar @starts) {
+			$script = $starts[0];
+		}
+		elsif ("stop" eq $cmd and 1 == scalar @stops) {
+			$script = $stops[0];
+		}
+		elsif ("stop" eq $cmd and 1 == scalar @shuts) {
+			$script = $shuts[0];
+		}
+		else {
+			die "Could not find $find script for $self->{pkg}";
+		}
 	}
 
 	$self->{$find} = $script;
